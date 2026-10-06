@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#7A0E40">
+<title>Supplier Payment</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<style>
+  :root {
+    --bg: #F2F0F4;
+    --surface: #FFFFFF;
+    --ink: #1E1A24;
+    --muted: #776F82;
+    --line: #E3DEE8;
+    --accent: #9C1554;
+    --accent-ink: #FFFFFF;
+    --warn: #B4471A;
+    --shadow: 0 1px 2px rgba(40, 20, 50, .05), 0 8px 24px rgba(40, 20, 50, .06);
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141118;
+      --surface: #1F1B25;
+      --ink: #F3EFF6;
+      --muted: #A39BAE;
+      --line: #322C3A;
+      --accent: #F0619F;
+      --accent-ink: #1A0710;
+      --warn: #F29A6B;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+    }
+  }
+
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+    padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
+  }
+
+  .app {
+    max-width: 440px;
+    margin: 0 auto;
+    padding: 20px 20px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 2px 6px;
+  }
+  header h1 { font-size: 17px; font-weight: 600; letter-spacing: -.01em; }
+
+  .icon-btn {
+    width: 44px; height: 44px;
+    display: grid; place-items: center;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    border-radius: 14px;
+    cursor: pointer;
+  }
+  .icon-btn svg { width: 20px; height: 20px; }
+
+  /* Input: Amount to Send */
+  .input-card {
+    display: block;
+    background: var(--surface);
+    border-radius: 20px;
+    box-shadow: var(--shadow);
+    padding: 18px 22px 20px;
+    border: 2px solid transparent;
+    cursor: text;
+  }
+  .input-card:focus-within { border-color: var(--accent); }
+  .input-card span { display: block; font-size: 15px; color: var(--muted); margin-bottom: 4px; }
+  .input-card input {
+    width: 100%;
+    border: 0; outline: 0;
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    font-size: 40px;
+    font-weight: 600;
+    letter-spacing: -.025em;
+    padding: 0;
+  }
+  .input-card input::placeholder { color: var(--line); }
+
+  /* − / + step controls */
+  .stepper {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .step-btn {
+    height: 52px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    touch-action: manipulation;          /* no double-tap zoom on fast taps */
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  .step-btn svg { width: 22px; height: 22px; }
+  .step-btn:active {
+    background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+    border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+  }
+  .step-btn:disabled { opacity: .4; cursor: default; }
+
+  /* Output: Supplier Gets */
+  .result {
+    background: var(--accent);
+    color: var(--accent-ink);
+    border-radius: 24px;
+    padding: 22px 22px 18px;
+    box-shadow: var(--shadow);
+  }
+  .result .label { font-size: 15px; opacity: .85; }
+  .result .amount {
+    font-size: clamp(50px, 16vw, 72px);
+    font-weight: 700;
+    letter-spacing: -.035em;
+    line-height: 1.05;
+    margin: 4px 0 18px;
+    word-break: break-all;
+  }
+  .result .meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 12px;
+    padding-top: 14px;
+    border-top: 1px solid color-mix(in srgb, var(--accent-ink) 22%, transparent);
+  }
+  .meta small { display: block; font-size: 13px; opacity: .8; }
+  .meta strong { font-size: 20px; font-weight: 600; }
+  .meta .rate { text-align: right; }
+
+  /* Settings dialog */
+  dialog {
+    border: 0;
+    padding: 0;
+    width: min(92vw, 380px);
+    border-radius: 22px;
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  }
+  dialog::backdrop { background: rgba(20, 10, 25, .45); }
+  .sheet { padding: 22px; display: flex; flex-direction: column; gap: 16px; }
+  .sheet h2 { font-size: 18px; font-weight: 600; }
+  .sheet label > span { display: block; font-size: 14px; color: var(--muted); margin-bottom: 8px; }
+  .rate-row {
+    display: flex; align-items: center; gap: 8px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 10px 16px;
+  }
+  .rate-row:focus-within { border-color: var(--accent); }
+  .rate-row input {
+    flex: 1; min-width: 0;
+    border: 0; outline: 0; background: transparent;
+    color: var(--ink); font: inherit; font-size: 28px; font-weight: 600;
+  }
+  .rate-row b { font-size: 22px; color: var(--muted); font-weight: 500; }
+  .sheet .err { font-size: 13px; color: var(--warn); min-height: 18px; margin-top: -8px; }
+  .actions { display: flex; gap: 10px; }
+  .btn {
+    flex: 1; height: 50px;
+    border-radius: 14px; border: 1px solid var(--line);
+    background: transparent; color: var(--ink);
+    font: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .input-card input:focus-visible, .rate-row input:focus-visible { outline: 0; }
+</style>
+</head>
+<body>
+<main class="app">
+  <header>
+    <h1>Supplier Payment</h1>
+    <button class="icon-btn" id="openSettings" aria-label="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+  </header>
+
+  <label class="input-card">
+    <span>Amount to Send</span>
+    <input id="send" type="text" inputmode="decimal" enterkeyhint="done"
+           autocomplete="off" placeholder="0" autofocus>
+  </label>
+
+  <div class="stepper">
+    <button class="step-btn" id="minus10" type="button" aria-label="Decrease Amount to Send by 10">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14"/></svg>
+    </button>
+    <button class="step-btn" id="plus10" type="button" aria-label="Increase Amount to Send by 10">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14M12 5v14"/></svg>
+    </button>
+  </div>
+
+  <section class="result" aria-live="polite">
+    <div class="label">Supplier Gets</div>
+    <div class="amount" id="supplierGets">0.00</div>
+    <div class="meta">
+      <div>
+        <small>Bkash Charge</small>
+        <strong id="charge">0.00</strong>
+      </div>
+      <div class="rate">
+        <small>Rate</small>
+        <strong id="rateText">1.15%</strong>
+      </div>
+    </div>
+  </section>
+</main>
+
+<dialog id="settings">
+  <form class="sheet" id="settingsForm" method="dialog">
+    <h2>Settings</h2>
+    <label>
+      <span>Bkash Charge Rate</span>
+      <div class="rate-row">
+        <input id="rateInput" type="text" inputmode="decimal" autocomplete="off">
+        <b>%</b>
+      </div>
+    </label>
+    <p class="err" id="rateErr"></p>
+    <div class="actions">
+      <button class="btn" type="button" id="cancelSettings">Cancel</button>
+      <button class="btn primary" type="submit">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(() => {
+  const DEFAULT_RATE = 1.15;
+  const STORAGE_KEY = 'bkashChargeRate';
+
+  const $ = (id) => document.getElementById(id);
+  const sendEl = $('send');
+  const minusBtn = $('minus10');
+  const plusBtn = $('plus10');
+  const supplierGetsEl = $('supplierGets');
+  const chargeEl = $('charge');
+  const rateText = $('rateText');
+  const dialog = $('settings');
+  const rateInput = $('rateInput');
+  const rateErr = $('rateErr');
+
+  // ---------- Rate storage ----------
+  function loadRate() {
+    try {
+      const v = parseFloat(localStorage.getItem(STORAGE_KEY));
+      if (isFinite(v) && v >= 0 && v < 100) return v;
+    } catch (e) {}
+    return DEFAULT_RATE;
+  }
+  function saveRate(v) {
+    try { localStorage.setItem(STORAGE_KEY, String(v)); } catch (e) {}
+  }
+  let rate = loadRate();
+
+  // ---------- Number helpers ----------
+  // Digits and one dot only, max 2 decimal places.
+  function sanitize(str) {
+    let s = String(str).replace(/,/g, '').replace(/[^\d.]/g, '');
+    const i = s.indexOf('.');
+    if (i !== -1) s = s.slice(0, i + 1) + s.slice(i + 1).replace(/\./g, '').slice(0, 2);
+    return s;
+  }
+  // All money math is done in paisa (integers) → no floating-point noise.
+  const toPaisa = (s) => {
+    const n = parseFloat(s);
+    return isFinite(n) ? Math.round(n * 100) : 0;
+  };
+  const fmt = (paisa) => (paisa / 100).toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+  const fmtRate = (r) => `${parseFloat(r.toFixed(2))}%`;
+
+  // ---------- Calculation ----------
+  // Supplier Gets = Amount to Send − (Amount to Send × Rate / 100),
+  //                 rounded to the nearest paisa (half up)
+  // Charge        = Amount to Send − Supplier Gets
+  // Integer math: 1.15% → 1150 thousandths, so (1 − rate) = 98850 / 100000.
+  function calculate() {
+    const sendP = toPaisa(sendEl.value);
+    const keep = 100000 - Math.round(rate * 1000);
+    const getsP = Math.floor((sendP * keep + 50000) / 100000);
+    const chargeP = sendP - getsP;
+
+    supplierGetsEl.textContent = fmt(getsP);
+    chargeEl.textContent = fmt(chargeP);
+    rateText.textContent = fmtRate(rate);
+  }
+
+  sendEl.addEventListener('input', () => {
+    sendEl.value = sanitize(sendEl.value);
+    calculate();
+    updateButton();
+  });
+
+  // ---------- − / + controls (step of 10) ----------
+  const STEP_P = 1000; // 10 in paisa
+  const toInputText = (p) => (p % 100 === 0 ? String(p / 100) : (p / 100).toFixed(2));
+
+  function updateButton() {
+    minusBtn.disabled = toPaisa(sendEl.value) <= 0;
+  }
+
+  function stepBy(deltaP) {
+    const next = Math.max(0, toPaisa(sendEl.value) + deltaP);
+    sendEl.value = toInputText(next);
+    calculate();
+    updateButton();
+  }
+
+  // Keep focus where it is, so tapping doesn't open/close the phone keyboard.
+  [minusBtn, plusBtn].forEach((btn) =>
+    btn.addEventListener('pointerdown', (e) => e.preventDefault())
+  );
+  minusBtn.addEventListener('click', () => stepBy(-STEP_P));
+  plusBtn.addEventListener('click', () => stepBy(STEP_P));
+
+  // ---------- Settings ----------
+  $('openSettings').addEventListener('click', () => {
+    rateInput.value = parseFloat(rate.toFixed(2));
+    rateErr.textContent = '';
+    dialog.showModal();
+    rateInput.select();
+  });
+  $('cancelSettings').addEventListener('click', () => dialog.close());
+  rateInput.addEventListener('input', () => {
+    rateInput.value = sanitize(rateInput.value);
+  });
+  $('settingsForm').addEventListener('submit', (e) => {
+    const v = parseFloat(rateInput.value);
+    if (!isFinite(v) || v < 0 || v >= 100) {
+      e.preventDefault();
+      rateErr.textContent = 'Enter a rate between 0 and 99.99.';
+      return;
+    }
+    rate = v;
+    saveRate(v);
+    calculate();
+  });
+  dialog.addEventListener('close', () => sendEl.focus());
+
+  calculate();
+  updateButton();
+
+  // ---------- Offline / PWA ----------
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+})();
+</script>
+</body>
+</html>
